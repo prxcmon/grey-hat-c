@@ -4,9 +4,9 @@ This repository, which is from my Notes section, is my personal learning guide b
 
 # 0x010 Chapters
 ---
-- [0x100 Programming](https://github.com/prxcmon/grey-hat-c/tree/master/0x100_programming){:target="_blank"}
-- [0x200 Data Structures and Algorithms](https://github.com/prxcmon/grey-hat-c/tree/master/0x200_data_structures_and_algorithms){:target="_blank"}
-- [0x300 Exploitation](https://github.com/prxcmon/grey-hat-c/tree/master/0x300_exploitation){:target="_blank"}
-- [0x400 Networking](https://github.com/prxcmon/grey-hat-c/tree/master/0x400_networking){:target="_blank"}
-- [0x500 Shellcode](https://github.com/prxcmon/grey-hat-c/tree/master/0x500_shellcode){:target="_blank"}
-- [0x600 External Projects](https://github.com/prxcmon/grey-hat-c/tree/master/0x600_external_projects){:target="_blank"}
+- [0x100 Programming](https://github.com/prxcmon/grey-hat-c/tree/master/0x100_programming)
+- [0x200 Data Structures and Algorithms](https://github.com/prxcmon/grey-hat-c/tree/master/0x200_data_structures_and_algorithms)
+- [0x300 Exploitation](https://github.com/prxcmon/grey-hat-c/tree/master/0x300_exploitation)
+- [0x400 Networking](https://github.com/prxcmon/grey-hat-c/tree/master/0x400_networking)
+- [0x500 Shellcode](https://github.com/prxcmon/grey-hat-c/tree/master/0x500_shellcode)
+- [0x600 External Projects](https://github.com/prxcmon/grey-hat-c/tree/master/0x600_external_projects)
