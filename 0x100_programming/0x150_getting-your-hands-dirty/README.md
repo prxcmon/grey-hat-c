@@ -207,6 +207,7 @@ First things that we need to identify is examining the `EIP` register (`RIP` for
         - **x86-64**
             
             ```nasm
+            0x0000000000001149 <+0>:     endbr64
             0x000000000000114d <+4>:     push   rbp
             0x000000000000114e <+5>:     mov    rbp,rsp
             0x0000000000001151 <+8>:     sub    rsp,0x10
@@ -326,3 +327,49 @@ GDB can also do other conversions with the examine command, which is using the c
 
 - The RIP register is pointing to memory that actually contains machine language instructions.
 
+Refer back to the `main()` Assembly instruction from the results of `objdump`
+```nasm
+1155:       c7 45 fc 00 00 00 00    mov    DWORD PTR [rbp-0x4],0x0
+```
+- The instruction will move the value of 0 into memory located at the address stored in the **RBP register minus 4**, where the C variable `i` is stored, thus the `i` was declared as an integer that uses 4 bytes of memory.
+- Basically, this command will zero out the variable `i` for the `for` loop, which stated like this following C code of [`firstProg.c`](firstProg.c) snippet.
+    ```c
+    ...
+    for (i = 0; i < 10; i++)
+    ...
+    ```
+
+Remember when I tried to disassemble the program in x64? If you can refer back to the `disass main` command, you see both x86 and x64 have differences, not only the `E/R` Assembly registers, but also the Assembly structure. Let's take a look.
+
+- Here are three instructions after the `main()` in x86. You can compare it with the three same instructions in x64 above.
+    ![x86-x-i](assets/x86-x-i.png)
+
+    - The behavior shows the next instruction after the `main()` instruction is the condition check or compare values `cmp`, which is comparing `i` with some numbers less than 10. This is bottom-test loop, meaning:
+
+        - The loop body executes first.
+        - The condition is checked after the body.
+        - If the condition is true, it jumps back to the loop body.
+
+- While in the aforementioned instructions in x64, the next instruction happens to be jump (`jmp`) before the `cmp` comparison, due to the compiler generated an explicit `jmp` to the condition check.
+
+    - Compared to the x86, this is known as top-test loop, which means:
+
+        - The condition is checked before entering the loop body.
+        - The loop body only runs if the condition is true.
+        - More efficient for cases where the loop might run zero times.
+
+To identify the next instruction after the `main()`, we can run `nexti` in the GDB shell, which means `next instruction`. The processor will read the instruction at RIP, execute it, and advance RIP to the next instruction.
+
+```shell
+(gdb) nexti
+```
+
+- Here's the example of the instruction after running the `nexti` command.
+
+    ![x64-nexti-x-i](assets/x64-nexti-x-i.png)
+    
+    - Next instruction through `x/i` of the current register RIP.
+
+    ![x64-nexti-disass-main](assets/x64-nexti-disass-main.png)
+
+    - Next instruction through `disass main` (Notice on the arrow `=>` on the left side of the memory addresses).
