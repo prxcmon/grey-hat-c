@@ -101,7 +101,17 @@ Since the book follows the Intel guide, we’ll be using Intel as our disassembl
 (gdb) set disassembly-flavor intel
 ```
 
-The Intel-based Assembly instructions generally follow this style:
+> [!note]
+> To prevent the GDB debugger from repeating the command above, we can configure the following setting into the config file `.gdbinit`.
+> 
+> ```bash
+> $ echo "set disassembly-flavor intel" > ~/.gdbinit
+> 
+> $ echo "set debuginfod enabled on" >> ~/.gdbinit
+> ``` 
+> ![gdbinit](assets/gdbinit.png)
+
+The Intel-based Assembly instrzuctions generally follow this style:
 
 ```nasm
 operation <destination>, <source>
@@ -279,7 +289,22 @@ GDB can also do other conversions with the examine command, which is using the c
 ![x64-x-i](assets/x64-x-i.png)
 - The RIP register is pointing to memory that actually contains machine language instructions.
 
+Remember when I tried to disassemble the program in x64? If you can refer back to the `disass main` command, you see both x86 and x64 have differences, not only the `E/R` Assembly registers, but also the Assembly structure. Let's take a look.
+- Here are three instructions after the `main()` in x86. You can compare it with the three same instructions in x64 above.
+    ![x86-x-i](assets/x86-x-i.png)
+    - The three instructions (stated by `x/3i`) shows the instruction `cmp` after the `mov`, which is the `main()` instruction.
+    - The behavior shows the next instruction after the `main()` instruction is the condition check or compare values `cmp`, which is comparing `i` with some numbers less than 10. This is bottom-test loop, meaning:
+        - The loop body executes first.
+        - The condition is checked after the body.
+        - If the condition is true, it jumps back to the loop body.
+- While in the aforementioned instructions in x64, the next instruction happens to be jump (`jmp`) before the `cmp` comparison, due to the compiler generated an explicit `jmp` to the condition check.
+    - Compared to the x86, this is known as top-test loop, which means:
+        - The condition is checked before entering the loop body.
+        - The loop body only runs if the condition is true.
+        - More efficient for cases where the loop might run zero times.
+
 Refer back to the `main()` Assembly instruction from the results of `objdump`
+
 ```nasm
 1155:       c7 45 fc 00 00 00 00    mov    DWORD PTR [rbp-0x4],0x0
 ```
@@ -291,18 +316,33 @@ Refer back to the `main()` Assembly instruction from the results of `objdump`
     ...
     ```
 
-Remember when I tried to disassemble the program in x64? If you can refer back to the `disass main` command, you see both x86 and x64 have differences, not only the `E/R` Assembly registers, but also the Assembly structure. Let's take a look.
-- Here are three instructions after the `main()` in x86. You can compare it with the three same instructions in x64 above.
-    ![x86-x-i](assets/x86-x-i.png)
-    - The behavior shows the next instruction after the `main()` instruction is the condition check or compare values `cmp`, which is comparing `i` with some numbers less than 10. This is bottom-test loop, meaning:
-        - The loop body executes first.
-        - The condition is checked after the body.
-        - If the condition is true, it jumps back to the loop body.
-- While in the aforementioned instructions in x64, the next instruction happens to be jump (`jmp`) before the `cmp` comparison, due to the compiler generated an explicit `jmp` to the condition check.
-    - Compared to the x86, this is known as top-test loop, which means:
-        - The condition is checked before entering the loop body.
-        - The loop body only runs if the condition is true.
-        - More efficient for cases where the loop might run zero times.
+According to the information from the book, examining the memory in RBP right now (before jumping into the next instruction), it will contain nothing but random garbage. Let's examine the RBP in several different ways.
+
+```shell
+# Start examining the RBP register
+(gdb) info register rbp
+
+# Examine 'four hex-bytes of **RBP minus 4**' memory address
+(gdb) x/4xb $rbp - 4
+
+# Examining the results of the previous command (address) will return the same memory garbage bytes
+(gdb) x/4xb 0x7fffffffd8bc
+```
+
+![x64-rbp-random-memory](assets/x64-rbp-random-memory.png)
+- The RBP register is shown to contain the address `0x7fffffffd8c0`. The Assembly instruction will be writing to a value offset by 4 less than that (explains the `DWORD PTR` directive of RBP minus four).
+- Instead of stating the Assembly `main()` instruction, we can create a temporary variable `$1` through the `print` command against the instruction.
+	```shell
+	# Create a variable of 'four hex-bytes of **RBP minus 4**'; it will be created under the `$1` variable
+	(gdb) print $rbp - 4
+	
+	# Examine the same command, but this time, we define the variable instead of typing the instruction
+	(gdb) x/4xb $1
+	
+	# Examine the hex-word of the instruction
+	(gdb) x/xw $1
+	```
+	![x64-rbp-4-var](assets/x64-rbp-4-var.png)
 
 To identify the next instruction after the `main()`, we can run `nexti` in the GDB shell, which means `next instruction`, or we can tap `[Enter]` on the keyboard to do the same. The processor will read the instruction at RIP, execute it, and advance RIP to the next instruction.
 
@@ -315,5 +355,11 @@ To identify the next instruction after the `main()`, we can run `nexti` in the G
     ![x64-nexti-disass-main](assets/x64-nexti-disass-main.png)
     - Next instruction through `disass main` (Notice on the arrow `=>` on the left side of the memory addresses).
 
-After running the `nexti` command, the instruction of RIP goes to the `jmp`, where RIP jumps unconditionally to the address `0x555555555171`.
+Examining the `RBP-0x4` register after running the `nexti` command will be zeroed out, which is the memory sets aside for the C variable `i`. Then, the RIP advances to the next instruction.  Here are the following RBP and RIP registers' output after the `nexti` command.
 
+![x64-rbp-after-nexti](assets/x64-rbp-after-nexti.png)
+
+> [!trivia]
+> In Linux-based GDB, examining the E/RBP will return the random garbage, which then will be zeroed out after the `nexti`. In Windows GDB, which is often installed through MinGW, examining the same register will be zeroed out without returning the random garbage.
+
+After running the `nexti` command, the instruction of RIP goes to the `jmp`, where RIP jumps unconditionally to the address `0x555555555171`. 
