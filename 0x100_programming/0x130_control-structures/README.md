@@ -1,11 +1,7 @@
 ## 0x130 Control structures
 
-<aside>
-📚
-
-The basic C functions below are likely similar or there might some differences from the C Essentials, that I’ve provided the PDF file in this folder repository.
-
-</aside>
+> [!note]
+> The basic C functions below are likely similar or there might some differences from the C Essentials, that I’ve provided the PDF file in this folder repository.
 
 The program requires **control structures**, which is the flow of the program’s execution from a simple sequential order to a more complex and more useful flow.
 
@@ -116,7 +112,6 @@ For (ctr=0; ctr<5; ctr++)
 ```
 
 The *for loop* above consists of three sections, separated by semicolons.
-
 - The first section, the `ctr` is declared as the counter and sets it to its initial value (`0`).
 - The second section, the condition that is similar with a *while* statement using the counter: Keep looping until the condition has been achieved.
 - The third section, sets what action should be taken on the counter during each iteration: Add 1 to the counter called `ctr`.
