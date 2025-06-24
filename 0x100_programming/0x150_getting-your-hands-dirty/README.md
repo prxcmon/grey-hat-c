@@ -20,6 +20,11 @@ Compiling the code using GCC.
     - [GeeksforGeeks](https://www.geeksforgeeks.org/cpp/installing-mingw-tools-for-c-c-and-changing-environment-variable/)
     - [phoenixNAP](https://phoenixnap.com/kb/install-gcc-windows)
 
+## Table of contents
+- [[#0x151 The bigger picture]]
+- [[#0x152 The x86 (and x86_64) processor]]
+- [[#0x153 Assembly language]]
+
 ### 0x151 The bigger picture
 
 Compiling the `firstProg` object with `objdump`, which is a GNU compiler to examine the executables/binaries that translates the high-level programming language, as in C, into the low-level language, as in the machine code. I've tested the following commands on how to examine the binaries in two different OSes.
@@ -66,7 +71,7 @@ The ***debugger*** tools are used by programmers to step through compiled progra
 - The same tool allows a hacker to observe the smallest point-of-view of machine code, which they can view the execution from all angles, pause it, and change anything along the way.
 
 An example of the GDB to display the state of the processor registers right before the program starts.
-- x86 architecture (from the book)
+- x86 architecture (from the book) 
     ![x86](assets/x86.png)
 - x86_64 architecture (from my program)
     ![x86_64](assets/x86_64.png)
@@ -293,15 +298,14 @@ Remember when I tried to disassemble the program in x64? If you can refer back t
 - Here are three instructions after the `main()` in x86. You can compare it with the three same instructions in x64 above.
     ![x86-x-i](assets/x86-x-i.png)
     - The three instructions (stated by `x/3i`) shows the instruction `cmp` after the `mov`, which is the `main()` instruction.
-    - The behavior shows the next instruction after the `main()` instruction is the condition check or compare values `cmp`, which is comparing `i` with some numbers less than 10. This is bottom-test loop, meaning:
+    - The behavior shows the next instruction after the `main()` instruction is the condition check or compare values `cmp`, which is comparing `i` with some numbers less than 10. This is known as the **top-test loop**, meaning:
+        - The condition is checked before entering the loop body.
+        - The loop body only runs if the condition is true.
+- While in the aforementioned instructions in x64, the next instruction happens to be jump (`jmp`) before the `cmp` comparison, due to the compiler generated an explicit `jmp` to the condition check.
+    - Compared to the x86, this is known as **bottom-test loop**, which means:
         - The loop body executes first.
         - The condition is checked after the body.
         - If the condition is true, it jumps back to the loop body.
-- While in the aforementioned instructions in x64, the next instruction happens to be jump (`jmp`) before the `cmp` comparison, due to the compiler generated an explicit `jmp` to the condition check.
-    - Compared to the x86, this is known as top-test loop, which means:
-        - The condition is checked before entering the loop body.
-        - The loop body only runs if the condition is true.
-        - More efficient for cases where the loop might run zero times.
 
 Refer back to the `main()` Assembly instruction from the results of `objdump`
 
@@ -359,7 +363,39 @@ Examining the `RBP-0x4` register after running the `nexti` command will be zeroe
 
 ![x64-rbp-after-nexti](assets/x64-rbp-after-nexti.png)
 
-> [!trivia]
+> [!note]
 > In Linux-based GDB, examining the E/RBP will return the random garbage, which then will be zeroed out after the `nexti`. In Windows GDB, which is often installed through MinGW, examining the same register will be zeroed out without returning the random garbage.
 
-After running the `nexti` command, the instruction of RIP goes to the `jmp`, where RIP jumps unconditionally to the address `0x555555555171`. 
+After running the `nexti` command, the instruction of RIP goes to the `jmp`, where RIP jumps unconditionally to the address `0x555555555171`. The same instruction defines the instruction to jump over the construction from the start of `main()` at offset 40 bytes, which begins the condition check of the variable `i`.
+
+I've managed to debug the code, so here are the possible RIP instructions of the Assembly code from the looping process until it reaches the `for` condition of the C code.
+```nasm
+; function prologue start
+endbr64
+push   rbp
+mov    rbp,rsp
+sub    rsp,0x10
+; function prologue end
+mov    DWORD PTR [rbp-0x4],0x0                        ; main() instruction
+jmp    0x555555555171 <main+40>                       ; i condition check starts
+; for loop starts
+cmp    DWORD PTR [rbp-0x4],0x9
+jle    0x55555555515e <main+21>
+lea    rax,[rip+0xe9f]        # 0x555555556004
+mov    rdi,rax
+call   0x555555555050 <puts@plt>
+add    DWORD PTR [rbp-0x4],0x1
+; loop ends after `i < 10` condition has been reached
+; program reaches to `return 0`
+mov    eax,0x0
+leave
+ret
+```
+
+The first `for` instruction, we come to the `cmp` instruction, which states as **compare instruction**. This will compare the memory used by C variable `i` with the value of 9.
+
+The next instruction goes to the `jle`, which stands for **jump if less than or equal to**, which uses the results of the previous comparison (which are stored under the `EFLAGS` register) to jump RIP to point to a different part of the code if conditions are met.
+- This means if the value stored in memory for the C variable `i` is less than or equal to the value `9`, the instruction says the register jumps to the address `0x55555555515e`
+- Otherwise, refer back to the previous `jmp` instruction, which is located in the address `0x555555555171`.
+
+After the `jle` instruction, we go to the `lea` instruction, which states as **load effective address**.

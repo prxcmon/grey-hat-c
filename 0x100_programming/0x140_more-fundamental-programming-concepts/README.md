@@ -2,6 +2,12 @@
 
 Universal programming concepts that are used in many programming languages with a few syntactical differences.
 
+## Table of contents
+- [[#0x141 Variables]]
+- [[#0x142 Arithmetic Operators]]
+- [[#0x143 Comparison Operators]]
+- [[#0x144 Functions]]
+
 ### 0x141 Variables
 
 **Variables** hold data that can be changed, which some of them can’t be changed (known as **constants**). Therefore, in C, variables must be declared and given a type before they can be used. All variables are stored in memory somewhere, as well as their declarations allow the compiler to organize this memory more efficiently.
